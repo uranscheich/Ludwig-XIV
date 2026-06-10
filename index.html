@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ludwig XIV. – Scrollytelling der Herrschaftssymbole v5</title>
+  <title>Ludwig XIV. – Scrollytelling der Herrschaftssymbole v6</title>
   <style>
     :root {
       --bg: #100806;
@@ -144,7 +144,24 @@
       100% { opacity: 0; transform: translate(-50%, 12px); }
     }
 
-    .scrolly { position: relative; }
+    .scrolly {
+      position: relative;
+      background: transparent;
+      margin-bottom: -1px;
+    }
+
+    .scrolly::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 86vh;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(16,8,6,0) 0%, rgba(16,8,6,.10) 38%, rgba(16,8,6,.02) 100%);
+    }
 
     .stage {
       position: sticky;
@@ -156,6 +173,9 @@
          freie Flächen um das Detailbild zeigen jetzt das geblurrte Gemälde. */
       background: transparent;
       z-index: 1;
+      opacity: 1;
+      will-change: opacity;
+      transform: translateZ(0);
     }
 
     .painting-wrap {
@@ -277,25 +297,26 @@
     }
 
     .panel {
-      min-height: 126vh;
+      min-height: 166vh;
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
       align-items: start;
-      /* Die Karten kommen erst unten ins Bild und bleiben dort kurz stehen. */
-      padding: 58vh clamp(18px, 5vw, 72px) 28vh;
+      /* Die Karten kommen unten in den Lesebereich und bleiben dort länger stehen.
+         Es gibt kein hartes Scroll-Snapping, nur ein optisches Sticky-Einloggen. */
+      padding: 62vh clamp(18px, 5vw, 72px) 62vh;
       position: relative;
       z-index: 4;
       pointer-events: none;
       /* Kein hartes Browser-Snap an jeder Station. */
     }
 
-    .panel.final-panel { min-height: 150vh; }
+    .panel.final-panel { min-height: 178vh; padding-bottom: 78vh; }
 
     .card {
       grid-column: 2;
       pointer-events: auto;
       position: sticky;
-      top: min(64vh, calc(50vh + 112px));
+      top: min(62vh, calc(50vh + 122px));
       border: 1px solid var(--line);
       border-radius: 26px;
       background: var(--card);
@@ -341,7 +362,8 @@
       place-items: center;
       padding: 10vh 5vw;
       /* Kein harter Wechsel mehr von schwarzer Detailphase zum Bildhintergrund. */
-      background: linear-gradient(180deg, transparent, rgba(10,5,4,.16) 32%, rgba(10,5,4,.28));
+      background: linear-gradient(180deg, rgba(10,5,4,0), rgba(10,5,4,.14) 28%, rgba(10,5,4,.28));
+      margin-top: -1px;
     }
 
     .outro-card {
@@ -399,17 +421,17 @@
       .panel:nth-child(even) {
         grid-template-columns: 1fr;
         align-items: start;
-        min-height: 126vh;
-        padding: 56vh 16px 22vh;
+        min-height: 172vh;
+        padding: 58vh 16px 66vh;
       }
 
-      .panel.final-panel { min-height: 152vh; }
+      .panel.final-panel { min-height: 184vh; padding-bottom: 84vh; }
 
       .card,
       .panel:nth-child(even) .card {
         grid-column: 1;
         max-width: none;
-        top: min(62vh, calc(42vh + 112px));
+        top: min(58vh, calc(42vh + 118px));
         border-radius: 22px;
         background: rgba(31, 20, 16, .84);
       }
@@ -482,7 +504,7 @@
       </div>
     </section>
 
-    <section class="panel" data-title="Krone" data-x="219" data-y="990" data-z="3.25" data-ring="1">
+    <section class="panel" data-title="Krone" data-x="230" data-y="956" data-z="3.25" data-ring="1">
       <div class="card">
         <div class="chapter">04 · Krone</div>
         <h2>Die Krone liegt neben ihm</h2>
@@ -500,7 +522,7 @@
       </div>
     </section>
 
-    <section class="panel" data-title="Schwert" data-x="645" data-y="985" data-z="3.05" data-ring="1">
+    <section class="panel" data-title="Schwert" data-x="626" data-y="917" data-z="3.05" data-ring="1">
       <div class="card">
         <div class="chapter">06 · Schwert</div>
         <h2>Militärische Macht und Ordnung</h2>
@@ -569,6 +591,8 @@
     const progressBar = document.getElementById('progressBar');
     const dots = document.getElementById('dots');
     const vignette = document.getElementById('vignette');
+    const scrolly = document.getElementById('scrolly');
+    const stage = document.querySelector('.stage');
 
     bgPainting.src = painting.src;
 
@@ -584,7 +608,7 @@
         const card = panel.querySelector('.card') || panel;
         const cardTop = card.getBoundingClientRect().top + window.scrollY;
         // Zielposition: Karte rastet im unteren Lesebereich ein.
-        window.scrollTo({ top: cardTop - window.innerHeight * 0.64, behavior: 'smooth' });
+        window.scrollTo({ top: cardTop - window.innerHeight * 0.56, behavior: 'smooth' });
       });
       dots.appendChild(dot);
     });
@@ -648,9 +672,9 @@
     function update() {
       ticking = false;
 
-      // Die Kamera schaltet, sobald die jeweilige Card den unteren Lesebereich erreicht.
-      // Es gibt kein hartes Browser-Snapping mehr; nur die Card bleibt per sticky kurz unter dem Fokuskreis stehen.
-      const triggerY = window.innerHeight * 0.64;
+      // Die Kamera schaltet, sobald die Card in ihrer unteren Sticky-Leseposition sitzt.
+      // Dadurch läuft der Scroll weiter weich, aber die Karte wirkt einmal sauber unter dem Fokusbereich eingerastet.
+      const triggerY = window.innerHeight * 0.56;
       let nextActive = 0;
 
       panels.forEach((panel, index) => {
@@ -668,6 +692,14 @@
       const progress = totalScroll > 0 ? (window.scrollY / totalScroll) * 100 : 0;
       progressBar.style.width = `${clamp(progress, 0, 100)}%`;
       [...dots.children].forEach((dot, index) => dot.classList.toggle('active', index === activeIndex));
+
+      // Weicher Übergang am Ende: Die Detailbühne blendet langsam aus,
+      // bevor der Merksatzbereich vollständig übernimmt. So entsteht kein harter Schwarz-/Bildbruch.
+      const scrollyRect = scrolly.getBoundingClientRect();
+      const fadeStart = window.innerHeight * 1.45;
+      const fadeEnd = window.innerHeight * 0.35;
+      const stageOpacity = clamp((scrollyRect.bottom - fadeEnd) / (fadeStart - fadeEnd), 0, 1);
+      stage.style.opacity = stageOpacity.toFixed(3);
     }
 
     function requestUpdate() {
